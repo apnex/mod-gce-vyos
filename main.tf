@@ -1,17 +1,21 @@
 ## image: GCE records the concrete image a family resolves to, so passing a family path
-## straight through would diff on every plan; resolve it here instead
+## straight through would diff on every plan. Every form is resolved through one data
+## source instead - no count, so an image built in the same apply (unknown at plan time)
+## simply defers the lookup to apply.
 locals {
-  image_family = try(regex("^(?:https://www.googleapis.com/compute/v1/)?projects/([^/]+)/global/images/family/([^/]+)$", var.image), null)
+  image_project = try(regex("projects/([^/]+)/global/images/", var.image)[0], var.project_id)
+  image_family  = try(regex("/global/images/family/([^/]+)$", var.image)[0], null)
+  image_name    = local.image_family == null ? element(split("/", var.image), length(split("/", var.image)) - 1) : null
 }
 
-data "google_compute_image" "family" {
-  count   = local.image_family == null ? 0 : 1
-  project = local.image_family[0]
-  family  = local.image_family[1]
+data "google_compute_image" "boot" {
+  project = local.image_project
+  family  = local.image_family
+  name    = local.image_name
 }
 
 locals {
-  image = local.image_family == null ? var.image : data.google_compute_image.family[0].self_link
+  image = data.google_compute_image.boot.self_link
 }
 
 ## login key: generated unless the caller supplies one

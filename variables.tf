@@ -22,7 +22,7 @@ variable "machine_type" {
 }
 
 variable "image" {
-  description = "VyOS image: a self link, projects/<p>/global/images/<name>, or projects/<p>/global/images/family/<family>. A family is resolved to its current image at plan time, so a newer image in the family replaces the instance on the next apply; pass a concrete image to pin it."
+  description = "VyOS image: a self link, projects/<p>/global/images/<name>, projects/<p>/global/images/family/<family>, or an image name in project_id. A family is resolved to its current image, so a newer image in the family replaces the instance on the next apply; pass a concrete image to pin it."
   type        = string
 }
 
