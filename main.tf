@@ -44,7 +44,7 @@ locals {
   # cloud-init (cc_vyos_userdata) treats everything before the first single quote as the
   # config path, so leaf values must be single-quoted: address '10.0.0.1/32', not address 10.0.0.1/32
   vyos_config_lines = [
-    for line in split("\n", coalesce(var.vyos_config, "")) : trimspace(line)
+    for line in split("\n", var.vyos_config == null ? "" : var.vyos_config) : trimspace(line)
     if trimspace(line) != "" && !startswith(trimspace(line), "#")
   ]
 
