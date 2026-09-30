@@ -22,7 +22,7 @@ variable "machine_type" {
 }
 
 variable "image" {
-  description = "VyOS image: a self link, projects/<p>/global/images/<name>, or projects/<p>/global/images/family/<family>."
+  description = "VyOS image: a self link, projects/<p>/global/images/<name>, or projects/<p>/global/images/family/<family>. A family is resolved to its current image at plan time, so a newer image in the family replaces the instance on the next apply; pass a concrete image to pin it."
   type        = string
 }
 
@@ -41,17 +41,33 @@ variable "disk_type" {
 ## networking
 
 variable "network_interfaces" {
-  description = "Interfaces in order (eth0, eth1, ...). nic_type is GVNIC (default) or VIRTIO_NET; external_ip adds an access config, optionally with a reserved nat_ip."
+  description = <<-EOT
+    Interfaces in order: the Nth entry is GCE nicN and VyOS ethN. Each needs its own subnet, normally in its own VPC network.
+    - subnetwork: subnet self link or id
+    - nic_type: GVNIC (default) or VIRTIO_NET
+    - network_ip: fixed internal IP; null lets GCE assign one
+    - external_ip / nat_ip: add an access config, optionally with a reserved address
+    - alias_ip_ranges: extra ranges routed to this interface by the VPC
+    - description: VyOS interface description
+    - dhcp: configure VyOS ethN by DHCP (default true). eth0 always keeps the default route; eth1 and later use no-default-route.
+    The maximum number of interfaces follows the vCPU count: 2 for 2 or fewer vCPUs (e2-small, e2-medium), 4 for e2-standard-4, 8 for e2-standard-8.
+  EOT
   type = list(object({
     subnetwork  = string
     nic_type    = optional(string, "GVNIC")
     network_ip  = optional(string)
     external_ip = optional(bool, false)
     nat_ip      = optional(string)
+    alias_ip_ranges = optional(list(object({
+      ip_cidr_range         = string
+      subnetwork_range_name = optional(string)
+    })), [])
+    description = optional(string)
+    dhcp        = optional(bool, true)
   }))
   validation {
-    condition     = length(var.network_interfaces) >= 1
-    error_message = "At least one network interface is required."
+    condition     = length(var.network_interfaces) >= 1 && length(var.network_interfaces) <= 10
+    error_message = "Between 1 and 10 network interfaces are required."
   }
   validation {
     condition     = alltrue([for ni in var.network_interfaces : contains(["GVNIC", "VIRTIO_NET"], ni.nic_type)])
@@ -85,19 +101,31 @@ variable "ssh_password_authentication" {
   default     = false
 }
 
+variable "vyos_config" {
+  description = "VyOS configuration in set syntax, one command per line, applied by cloud-init on first boot; blank lines and lines starting with # are ignored. Leaf values must be single-quoted (address '10.0.0.1/32'), because cloud-init reads everything before the first quote as the config path. Suits templatefile() over a per-router config file."
+  type        = string
+  default     = null
+}
+
 variable "vyos_config_commands" {
-  description = "VyOS configuration commands applied by cloud-init on first boot (for example \"set interfaces ethernet eth1 address dhcp\")."
+  description = "VyOS configuration commands applied by cloud-init on first boot, after vyos_config. Leaf values must be single-quoted, for example \"set system time-zone 'UTC'\"."
   type        = list(string)
   default     = []
 }
 
+variable "replace_on_config_change" {
+  description = "Replace the instance when its rendered first-boot configuration changes, so the running router always matches the code. False updates metadata only, which cloud-init does not re-apply."
+  type        = bool
+  default     = true
+}
+
 variable "user_data" {
-  description = "Raw cloud-init user data. Replaces the rendered user data entirely, including the SSH password setting; mutually exclusive with vyos_config_commands."
+  description = "Raw cloud-init user data. Replaces the rendered user data entirely, including interface setup and the SSH password setting; mutually exclusive with vyos_config and vyos_config_commands."
   type        = string
   default     = null
   validation {
-    condition     = var.user_data == null || length(var.vyos_config_commands) == 0
-    error_message = "Set either user_data or vyos_config_commands, not both."
+    condition     = var.user_data == null || (length(var.vyos_config_commands) == 0 && var.vyos_config == null)
+    error_message = "Set either user_data or vyos_config / vyos_config_commands, not both."
   }
 }
 
@@ -111,6 +139,12 @@ variable "metadata" {
 
 variable "serial_port_enable" {
   description = "Enable the interactive serial console (password login stays available there for recovery). Some organisations forbid it via compute.disableSerialPortAccess; serial output is readable either way."
+  type        = bool
+  default     = false
+}
+
+variable "deletion_protection" {
+  description = "Protect the instance from deletion; Terraform cannot destroy it until this is set back to false."
   type        = bool
   default     = false
 }

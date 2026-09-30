@@ -85,18 +85,36 @@ ssh -i router-a.key vyos@$(terraform output -raw router_address)
 ### options
 All inputs are described in `variables.tf`; the common ones:
 ```
-machine_type			= "e2-small"
-image				= "projects/<project>/global/images/family/vyos-rolling"	# any VyOS GCE image
-network_interfaces		= [ ... ]	# eth0, eth1, ... each with subnetwork, nic_type, network_ip, external_ip
-nic_type			= "GVNIC"	# per interface; "VIRTIO_NET" for the legacy virtio NIC
+machine_type			= "e2-small"	# 2 vCPUs = 2 NICs; e2-standard-4 = 4, e2-standard-8 = 8
+image				= "projects/<project>/global/images/family/vyos-rolling"	# family resolves to its latest image
+network_interfaces		= [ ... ]	# nicN = ethN; each needs its own subnet, normally its own VPC
 can_ip_forward			= true
 ssh_public_key			= null		# supply your own key; null generates one (ssh_private_key output)
-vyos_config_commands		= []		# applied by cloud-init on first boot
+vyos_config			= null		# set-syntax config, e.g. templatefile("router.cfg.tftpl", {...})
+vyos_config_commands		= []		# extra commands, applied after vyos_config
+replace_on_config_change	= true		# replace the router when its first-boot config changes
 ssh_password_authentication	= false		# true allows SSH password login
 serial_port_enable		= false		# true enables the interactive serial console
+deletion_protection		= false
+```
+
+Per interface:
+```
+{
+	subnetwork	= "<subnet self link>"
+	nic_type	= "GVNIC"	# or "VIRTIO_NET"
+	network_ip	= "10.0.0.2"	# fixed internal ip; null = assigned
+	external_ip	= false
+	nat_ip		= null		# reserved external ip
+	alias_ip_ranges	= []		# [{ ip_cidr_range = "10.1.0.0/24" }]
+	description	= "transit"
+	dhcp		= true		# eth1+ get address dhcp + no-default-route
+}
 ```
 
 ### notes
+- Leaf values in `vyos_config` and `vyos_config_commands` must be single-quoted: `set interfaces dummy dum0 address '10.0.0.1/32'`. cloud-init reads everything before the first quote as the config path, and an unquoted value breaks the whole first-boot config
+- GCE hands the default route to nic0 only, so eth1 and later are configured with `no-default-route`
+- First-boot configuration is applied once; with `replace_on_config_change = true` a change replaces the router, otherwise it only updates metadata
 - The generated private key is also held in Terraform state
-- `vyos_config_commands` run on first boot only; later changes update instance metadata but not the running configuration
-- Raw `user_data` replaces the rendered configuration entirely, including the SSH password setting
+- Raw `user_data` replaces the rendered configuration entirely, including interface setup and the SSH password setting

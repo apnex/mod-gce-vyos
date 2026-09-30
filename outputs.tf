@@ -13,6 +13,30 @@ output "zone" {
   value       = google_compute_instance.vyos.zone
 }
 
+output "id" {
+  description = "Instance id (projects/<project>/zones/<zone>/instances/<name>)."
+  value       = google_compute_instance.vyos.id
+}
+
+output "interfaces" {
+  description = "Per-interface details in order: VyOS name, GCE name, network, subnetwork, internal IP and external IP (null where absent)."
+  value = [
+    for i, ni in google_compute_instance.vyos.network_interface : {
+      vyos_name   = "eth${i}"
+      gce_name    = ni.name
+      network     = ni.network
+      subnetwork  = ni.subnetwork
+      internal_ip = ni.network_ip
+      external_ip = try(ni.access_config[0].nat_ip, null)
+    }
+  ]
+}
+
+output "vyos_config_commands" {
+  description = "The full first-boot command list rendered into user data (empty when raw user_data is used)."
+  value       = var.user_data == null ? local.vyos_config_commands : []
+}
+
 output "internal_ips" {
   description = "Internal IP per interface, in interface order."
   value       = [for ni in google_compute_instance.vyos.network_interface : ni.network_ip]
