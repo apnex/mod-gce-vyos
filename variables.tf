@@ -41,10 +41,10 @@ variable "disk_type" {
 ## networking
 
 variable "network_interfaces" {
-  description = "Interfaces in order (eth0, eth1, ...). nic_type is GVNIC or VIRTIO_NET (null = platform default); external_ip adds an access config, optionally with a reserved nat_ip."
+  description = "Interfaces in order (eth0, eth1, ...). nic_type is GVNIC (default) or VIRTIO_NET; external_ip adds an access config, optionally with a reserved nat_ip."
   type = list(object({
     subnetwork  = string
-    nic_type    = optional(string)
+    nic_type    = optional(string, "GVNIC")
     network_ip  = optional(string)
     external_ip = optional(bool, false)
     nat_ip      = optional(string)
@@ -52,6 +52,10 @@ variable "network_interfaces" {
   validation {
     condition     = length(var.network_interfaces) >= 1
     error_message = "At least one network interface is required."
+  }
+  validation {
+    condition     = alltrue([for ni in var.network_interfaces : contains(["GVNIC", "VIRTIO_NET"], ni.nic_type)])
+    error_message = "nic_type must be GVNIC or VIRTIO_NET."
   }
 }
 

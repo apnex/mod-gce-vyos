@@ -88,6 +88,7 @@ All inputs are described in `variables.tf`; the common ones:
 machine_type			= "e2-small"
 image				= "projects/<project>/global/images/family/vyos-rolling"	# any VyOS GCE image
 network_interfaces		= [ ... ]	# eth0, eth1, ... each with subnetwork, nic_type, network_ip, external_ip
+nic_type			= "GVNIC"	# per interface; "VIRTIO_NET" for the legacy virtio NIC
 can_ip_forward			= true
 ssh_public_key			= null		# supply your own key; null generates one (ssh_private_key output)
 vyos_config_commands		= []		# applied by cloud-init on first boot
