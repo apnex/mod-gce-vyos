@@ -6,8 +6,8 @@ The example below builds the image with [`mod-vyos-image`](https://github.com/ap
 ```
 locals {
 	project_id	= "my-project"
-	region		= "australia-southeast1"
-	zone		= "australia-southeast1-a"
+	region		= "us-central1"
+	zone		= "us-central1-a"
 	ssh_source	= "203.0.113.10/32" # your public ip
 }
 
