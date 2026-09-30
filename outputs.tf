@@ -18,6 +18,11 @@ output "id" {
   value       = google_compute_instance.vyos.id
 }
 
+output "instance_id" {
+  description = "Server-assigned unique instance id; unlike name and self link, it changes whenever the instance is replaced."
+  value       = google_compute_instance.vyos.instance_id
+}
+
 output "interfaces" {
   description = "Per-interface details in order: VyOS name, GCE name, network, subnetwork, internal IP and external IP (null where absent)."
   value = [
