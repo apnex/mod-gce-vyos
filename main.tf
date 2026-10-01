@@ -118,12 +118,17 @@ resource "google_compute_instance" "vyos" {
     enable_integrity_monitoring = true
   }
 
-  metadata = merge(var.metadata, {
-    ssh-keys           = "${local.ssh_user}:${local.ssh_public_key}"
-    user-data          = local.user_data
-    enable-oslogin     = "FALSE"
-    serial-port-enable = var.serial_port_enable ? "TRUE" : "FALSE"
-  })
+  metadata = merge(
+    {
+      ssh-keys           = "${local.ssh_user}:${local.ssh_public_key}"
+      user-data          = local.user_data
+      serial-port-enable = var.serial_port_enable ? "TRUE" : "FALSE"
+    },
+    var.enable_oslogin != null ? {
+      enable-oslogin = var.enable_oslogin ? "TRUE" : "FALSE"
+    } : {},
+    var.metadata,
+  )
 
   dynamic "service_account" {
     for_each = var.service_account_email == null ? [] : [1]
