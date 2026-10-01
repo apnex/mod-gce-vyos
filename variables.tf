@@ -136,7 +136,7 @@ variable "user_data" {
 }
 
 variable "metadata" {
-  description = "Additional instance metadata. Keys set here override defaults managed by the module (ssh-keys, user-data, serial-port-enable, enable-oslogin)."
+  description = "Additional instance metadata. ssh-keys, user-data, enable-oslogin and serial-port-enable are managed by the module."
   type        = map(string)
   default     = {}
 }

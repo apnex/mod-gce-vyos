@@ -119,6 +119,7 @@ resource "google_compute_instance" "vyos" {
   }
 
   metadata = merge(
+    var.metadata,
     {
       ssh-keys           = "${local.ssh_user}:${local.ssh_public_key}"
       user-data          = local.user_data
@@ -127,7 +128,6 @@ resource "google_compute_instance" "vyos" {
     var.enable_oslogin != null ? {
       enable-oslogin = var.enable_oslogin ? "TRUE" : "FALSE"
     } : {},
-    var.metadata,
   )
 
   dynamic "service_account" {
