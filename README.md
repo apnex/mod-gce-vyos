@@ -114,8 +114,11 @@ Per interface:
 ```
 
 ### notes
-- Leaf values in `vyos_config` and `vyos_config_commands` must be single-quoted: `set interfaces dummy dum0 address '10.0.0.1/32'`. cloud-init reads everything before the first quote as the config path, and an unquoted value breaks the whole first-boot config
+- Leaf values in `vyos_config` and `vyos_config_commands` must be single-quoted, as in `set interfaces dummy dum0 address '10.0.0.1/32'`; cloud-init reads everything before the first quote as the config path, and an unquoted value breaks the whole first-boot config
 - GCE hands the default route to nic0 only, so eth1 and later are configured with `no-default-route`
 - First-boot configuration is applied once; with `replace_on_config_change = true` a change replaces the router, otherwise it only updates metadata
 - The generated private key is also held in Terraform state
+- Under `constraints/compute.requireOsLogin`, set `enable_oslogin = null` (or `true`); the policy rejects instances that set it to false
+- OS Login identities (`gcloud compute ssh`) do not authenticate on VyOS, which runs sshd from its own config; log in with the module's key
+- With OS Login on, use an image from `mod-vyos-image` that masks Debian's `ssh.service`; otherwise the guest agent breaks SSH
 - Raw `user_data` replaces the rendered configuration entirely, including interface setup and the SSH password setting
