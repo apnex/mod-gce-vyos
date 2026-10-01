@@ -94,6 +94,7 @@ vyos_config			= null		# set-syntax config, e.g. templatefile("router.cfg.tftpl",
 vyos_config_commands		= []		# extra commands, applied after vyos_config
 replace_on_config_change	= true		# replace the router when its first-boot config changes
 ssh_password_authentication	= false		# true allows SSH password login
+enable_oslogin			= false		# null omits enable-oslogin to inherit project/org policy
 serial_port_enable		= false		# true enables the interactive serial console
 deletion_protection		= false
 ```

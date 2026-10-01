@@ -101,6 +101,12 @@ variable "ssh_password_authentication" {
   default     = false
 }
 
+variable "enable_oslogin" {
+  description = "Set enable-oslogin metadata. Defaults to false. If set to null, the metadata key is omitted so project/organization policy defaults apply."
+  type        = bool
+  default     = false
+}
+
 variable "vyos_config" {
   description = "VyOS configuration in set syntax, one command per line, applied by cloud-init on first boot; blank lines and lines starting with # are ignored. Leaf values must be single-quoted (address '10.0.0.1/32'), because cloud-init reads everything before the first quote as the config path. Suits templatefile() over a per-router config file."
   type        = string
